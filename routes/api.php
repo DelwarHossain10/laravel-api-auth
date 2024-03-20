@@ -10,7 +10,7 @@ use App\Http\Controllers\Api\PermissionsController;
 
 // Public Routes
 Route::post('/register', [UserController::class, 'register']);
-Route::post('/login', [UserController::class, 'login']);
+Route::post('/login', [UserController::class, 'login'])->name('login');
 // Route::post('/send-reset-password-email', [PasswordResetController::class, 'send_reset_password_email']);
 // Route::post('/reset-password/{token}', [PasswordResetController::class, 'reset']);
 
@@ -36,3 +36,10 @@ Route::middleware(['auth:sanctum'])->group(function(){
     Route::resource('permissions', PermissionsController::class);
 
 });
+
+Route::any('{any}', function () {
+    return response()->json([
+        'status'    => false,
+        'message'   => 'This Api does not exists Or Please Login!',
+    ], 404);
+})->where('any', '.*');

@@ -20,13 +20,23 @@ class RolesController extends Controller
     public function index(Request $request)
     {
         //
-        $roles = Role::orderBy('id', 'DESC')->get();
+        try {
+            $roles = Role::orderBy('id', 'DESC')->get();
 
-        return response([
-            'role' => $roles,
-            'message' => 'All Roles List',
-            'status' => 'Success'
-        ], 200);
+            return response([
+                'role' => $roles,
+                'message' => 'All Roles List',
+                'status' => 'Success'
+            ], 200);
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 
     /**
@@ -37,12 +47,22 @@ class RolesController extends Controller
     public function create()
     {
         //
-        $permissions = Permission::get();
-        return response([
-            'permissions' => $permissions,
-            'message' => 'All Roles List',
-            'status' => 'Success'
-        ], 200);
+        try {
+            $permissions = Permission::get();
+            return response([
+                'permissions' => $permissions,
+                'message' => 'All Roles List',
+                'status' => 'Success'
+            ], 200);
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 
     /**
@@ -78,7 +98,13 @@ class RolesController extends Controller
             ], 200);
         } catch (\Exception $e) {
             DB::rollback();
-            dd($e);
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
         }
     }
 
@@ -91,15 +117,25 @@ class RolesController extends Controller
     public function show(Role $role)
     {
         //
-        $role = $role;
-        $rolePermissions = $role->permissions;
+        try {
+            $role = $role;
+            $rolePermissions = $role->permissions;
 
-        return response([
-            'role' => $role,
-            'permissions' => $rolePermissions,
-            'message' => 'Role Individual Show',
-            'status' => 'Success'
-        ], 200);
+            return response([
+                'role' => $role,
+                'permissions' => $rolePermissions,
+                'message' => 'Role Individual Show',
+                'status' => 'Success'
+            ], 200);
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
 
         // return view('roles.show', compact('role', 'rolePermissions'));
     }
@@ -113,16 +149,26 @@ class RolesController extends Controller
     public function edit(Role $role)
     {
         //
-        $role = $role;
-        $rolePermissions = $role->permissions->pluck('name')->toArray();
-        $permissions = Permission::get();
+        try {
+            $role = $role;
+            $rolePermissions = $role->permissions->pluck('name')->toArray();
+            $permissions = Permission::get();
 
-        return response([
-            'role' => $role,
-            'permissions' => $rolePermissions,
-            'message' => 'Role Individual Edit',
-            'status' => 'Success'
-        ], 200);
+            return response([
+                'role' => $role,
+                'permissions' => $rolePermissions,
+                'message' => 'Role Individual Edit',
+                'status' => 'Success'
+            ], 200);
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 
     /**
@@ -134,29 +180,40 @@ class RolesController extends Controller
      */
     public function update($id, Request $request)
     {
+        DB::beginTransaction();
+        try {
+            $validated = Validator::make($request->all(), [
+                'name' => 'required',
+                'permission' => 'required',
+            ]);
 
-        $validated = Validator::make($request->all(), [
-            'name' => 'required',
-            'permission' => 'required',
-        ]);
+            if ($validated->fails()) {
+                return response([
+                    'message' => $validated->errors(),
+                    'status' => 'error'
+                ], 200);
+            }
 
-        if ($validated->fails()) {
+            $role = Role::find($id);
+            $role->update($request->only('name'));
+
+            $role->syncPermissions($request->get('permission'));
+
             return response([
-                'message' => $validated->errors(),
-                'status' => 'error'
+                'role' => $role,
+                'message' => 'Role updated successfully',
+                'status' => 'Success'
             ], 200);
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
         }
-
-        $role = Role::find($id);
-        $role->update($request->only('name'));
-
-        $role->syncPermissions($request->get('permission'));
-
-        return response([
-            'role' => $role,
-            'message' => 'Role updated successfully',
-            'status' => 'Success'
-        ], 200);
     }
 
     /**
@@ -167,11 +224,21 @@ class RolesController extends Controller
      */
     public function destroy($id)
     {
-        $role = Role::find($id);
-        $role->delete();
-        return response([
-            'message' => 'Role deleted successfully',
-            'status' => 'Success'
-        ], 200);
+        try {
+            $role = Role::find($id);
+            $role->delete();
+            return response([
+                'message' => 'Role deleted successfully',
+                'status' => 'Success'
+            ], 200);
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 }

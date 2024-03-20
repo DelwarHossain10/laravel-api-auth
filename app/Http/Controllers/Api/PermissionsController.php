@@ -18,13 +18,25 @@ class PermissionsController extends Controller
     public function index()
     {
         //
-        $permissions = Permission::all();
-
-        return response([
-            'permissions' => $permissions,
-            'message' => 'All Permission List',
-            'status'=>'Success'
-        ], 200);
+        try {
+            $permissions = Permission::all();
+            return response(
+                [
+                    "permissions" => $permissions,
+                    "message" => "All Permission List",
+                    "status" => "Success",
+                ],
+                200
+            );
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 
     /**
@@ -35,10 +47,13 @@ class PermissionsController extends Controller
     public function create()
     {
         //
-        return response([
-            'message' => 'Create',
-            'status'=>'Success'
-        ], 200);
+        return response(
+            [
+                "message" => "Create",
+                "status" => "Success",
+            ],
+            200
+        );
     }
 
     /**
@@ -51,16 +66,32 @@ class PermissionsController extends Controller
     {
         //
         $request->validate([
-            'name' => 'required|unique:users,name'
+            "name" => "required|unique:users,name",
         ]);
 
-        $permission = Permission::create(['name' => $request->get('name'), 'guard_name' => 'web']);
+        try {
+            $permission = Permission::create([
+                "name" => $request->get("name"),
+                "guard_name" => "web",
+            ]);
 
-            return response([
-                'permission' =>  $permission,
-                'message' => 'Permission created successfully',
-                'status'=>'Success'
-            ], 200);
+            return response(
+                [
+                    "permission" => $permission,
+                    "message" => "Permission created successfully",
+                    "status" => "Success",
+                ],
+                200
+            );
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 
     /**
@@ -83,12 +114,14 @@ class PermissionsController extends Controller
     public function edit(Permission $permission)
     {
         //
-        return response([
-            'permissions' => $permission,
-            'message' => 'Permission Individual Edit',
-            'status'=>'Success'
-        ], 200);
-
+        return response(
+            [
+                "permissions" => $permission,
+                "message" => "Permission Individual Edit",
+                "status" => "Success",
+            ],
+            200
+        );
     }
 
     /**
@@ -103,26 +136,40 @@ class PermissionsController extends Controller
         //
 
         $validated = Validator::make($request->all(), [
-            'name' => 'required|unique:permissions,name,'.$id
+            "name" => "required|unique:permissions,name," . $id,
         ]);
 
         if ($validated->fails()) {
-            return response([
-                'message' => $validated->errors(),
-                'status' => 'error'
-            ], 200);
+            return response(
+                [
+                    "message" => $validated->errors(),
+                    "status" => "error",
+                ],
+                200
+            );
         }
 
-        $permission = Permission::find($id);
-        $permission->update($request->only('name'));
+        try {
+            $permission = Permission::find($id);
+            $permission->update($request->only("name"));
 
-        return response([
-            'permission' =>  $permission,
-            'message' => 'Permission updated successfully',
-            'status'=>'Success'
-        ], 200);
-
-
+            return response(
+                [
+                    "permission" => $permission,
+                    "message" => "Permission updated successfully",
+                    "status" => "Success",
+                ],
+                200
+            );
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 
     /**
@@ -134,14 +181,25 @@ class PermissionsController extends Controller
     public function destroy($id)
     {
         //
-        $permission = Permission::find($id);
-        $permission->delete();
+        try {
+            $permission = Permission::find($id);
+            $permission->delete();
 
-        return response([
-            'message' => 'Permission deleted successfully',
-            'status'=>'Success'
-        ], 200);
-
-
+            return response(
+                [
+                    "message" => "Permission deleted successfully",
+                    "status" => "Success",
+                ],
+                200
+            );
+        } catch (\Exception $e) {
+            return response(
+                [
+                    "message" => $e->getMessage(),
+                    "status" => "error",
+                ],
+                403
+            );
+        }
     }
 }
