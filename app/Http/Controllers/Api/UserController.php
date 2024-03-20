@@ -30,17 +30,15 @@ class UserController extends Controller
                 'status' => 'error'
             ], 200);
         }
+
         DB::beginTransaction();
         try {
-
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password)
             ]);
-
             $user->assignRole($request->roles);
-
             $token = $user->createToken($request->email)->plainTextToken;
             DB::commit();
             return response([
@@ -49,7 +47,11 @@ class UserController extends Controller
                 'status' => 'success'
             ], 201);
         } catch (\Exception $e) {
-            dd($e);
+            return response([
+                'message' => $e->getMessage(),
+                'status' => 'error'
+            ],403);
+
             DB::rollback();
         }
     }
@@ -70,7 +72,7 @@ class UserController extends Controller
         }
 
 
-        $user = User::where('email', $request->email)->first();
+         $user = User::where('email', $request->email)->first();
         if ($user && Hash::check($request->password, $user->password)) {
 
             $token = $user->createToken($request->email)->plainTextToken;
@@ -99,9 +101,11 @@ class UserController extends Controller
     public function logged_user()
     {
 
+        try {
         $role = null;
         $permissions = null;
         $loggeduser = auth()->user();
+        $extraPermission = collect(auth()->user()->permissions)->pluck('name');
 
 
         if (isset(auth()->user()->roles[0])) {
@@ -111,58 +115,100 @@ class UserController extends Controller
             $rolePermissions = Permission::join("role_has_permissions", "role_has_permissions.permission_id", "=", "permissions.id")
                 ->whereIn("role_has_permissions.role_id", auth()->user()->roles->pluck('id'))
                 ->get();
-            $permissions = $rolePermissions;
+
+            $permissionsList = collect($rolePermissions)->pluck('name');
+            $permissionsList = $permissionsList->merge($extraPermission)->unique();
         }
         return response([
             'user' => $loggeduser,
-            'permissions' => $permissions,
+            'Permissions List' => $permissionsList,
             'message' => 'Logged User Data',
             'status' => 'success'
         ], 200);
+    } catch (\Exception $e) {
+        return response([
+            'message' => $e->getMessage(),
+            'status' => 'error'
+        ],403);
+
+
+    }
     }
 
     public function change_password(Request $request)
     {
+        DB::beginTransaction();
+        try {
         $request->validate([
             'password' => 'required',
         ]);
         $loggeduser = auth()->user();
         $loggeduser->password = Hash::make($request->password);
         $loggeduser->update();
+        DB::commit();
         return response([
             'message' => 'Password Changed Successfully',
             'status' => 'success'
         ], 200);
+    } catch (\Exception $e) {
+        return response([
+            'message' => $e->getMessage(),
+            'status' => 'error'
+        ],403);
+
+        DB::rollback();
+    }
     }
 
     public function role_list()
     {
+        try {
         $roles = Role::pluck('name', 'name')->all();
         return response([
             'roles' => $roles,
             'message' => 'All Role List',
             'status' => 'success'
         ], 200);
+    } catch (\Exception $e) {
+        return response([
+            'message' => $e->getMessage(),
+            'status' => 'error'
+        ],403);
+    }
     }
 
     public function permission_list()
     {
+        try {
         $permission = Permission::select('name', 'id')->get();
         return response([
             'permission' => $permission,
             'message' => 'All Permission List',
             'status' => 'success'
         ], 200);
+    } catch (\Exception $e) {
+        return response([
+            'message' => $e->getMessage(),
+            'status' => 'error'
+        ],403);
+    }
     }
 
     public function user_list()
     {
+        try {
         $userList = User::get();
         return response([
             'users' => $userList,
             'message' => 'All User List',
             'status' => 'success'
         ], 200);
+    } catch (\Exception $e) {
+        return response([
+            'message' => $e->getMessage(),
+            'status' => 'error'
+        ],403);
+    }
     }
 
     public function user_update(Request $request, $id)
@@ -192,12 +238,50 @@ class UserController extends Controller
             DB::commit();
             return response([
                 'user' => $user,
-                'message' => 'Registration Success',
+                'message' => 'User Update successfully',
                 'status' => 'success'
             ], 201);
 
         } catch (\Exception $e) {
-            dd($e);
+            return response([
+                'message' => $e->getMessage(),
+                'status' => 'error'
+            ],403);
+            DB::rollback();
+        }
+    }
+
+    public function assign_permission(Request $request, $id)
+    {
+        $validated = Validator::make($request->all(), [
+            'permissions' => 'required',
+        ]);
+
+        if ($validated->fails()) {
+            return response([
+                'message' => $validated->errors(),
+                'status' => 'error'
+            ], 200);
+        }
+
+        DB::beginTransaction();
+        try {
+
+            $user = User::find($id);
+            $user->givePermissionTo($request->permissions);
+
+            DB::commit();
+            return response([
+                'permissions' => $request->permissions,
+                'message' => 'Assign Permission Successfully',
+                'status' => 'success'
+            ], 201);
+
+        } catch (\Exception $e) {
+            return response([
+                'message' => $e->getMessage(),
+                'status' => 'error'
+            ],403);
             DB::rollback();
         }
     }

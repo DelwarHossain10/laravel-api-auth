@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Spatie\Permission\Models\Permission;
+use Illuminate\Support\Facades\Validator;
 
 class PermissionsController extends Controller
 {
@@ -53,7 +54,7 @@ class PermissionsController extends Controller
             'name' => 'required|unique:users,name'
         ]);
 
-        $permission = Permission::create($request->only('name'));
+        $permission = Permission::create(['name' => $request->get('name'), 'guard_name' => 'web']);
 
             return response([
                 'permission' =>  $permission,
@@ -97,17 +98,26 @@ class PermissionsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Permission $permission)
+    public function update($id, Request $request)
     {
         //
-        $request->validate([
-            'name' => 'required|unique:permissions,name,'.$permission->id
+
+        $validated = Validator::make($request->all(), [
+            'name' => 'required|unique:permissions,name,'.$id
         ]);
 
+        if ($validated->fails()) {
+            return response([
+                'message' => $validated->errors(),
+                'status' => 'error'
+            ], 200);
+        }
+
+        $permission = Permission::find($id);
         $permission->update($request->only('name'));
 
         return response([
-            'role' =>  $permission,
+            'permission' =>  $permission,
             'message' => 'Permission updated successfully',
             'status'=>'Success'
         ], 200);
@@ -121,9 +131,10 @@ class PermissionsController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Permission $permission)
+    public function destroy($id)
     {
         //
+        $permission = Permission::find($id);
         $permission->delete();
 
         return response([

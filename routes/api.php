@@ -16,17 +16,20 @@ Route::post('/login', [UserController::class, 'login']);
 
 // Protected Routes
 Route::middleware(['auth:sanctum'])->group(function(){
-
     Route::post('/logout', [UserController::class, 'logout']);
     Route::get('/loggeduser', [UserController::class, 'logged_user']);
     Route::post('/changepassword', [UserController::class, 'change_password']);
 
-    //list
+    //List
     Route::get('/role_list', [UserController::class, 'role_list']);
     Route::get('/permission_list', [UserController::class, 'permission_list']);
     Route::get('/user_list', [UserController::class, 'user_list']);
 
+    //User Update
     Route::put('/user_update/{id}', [UserController::class, 'user_update']);
+
+    //Assign Permission
+    Route::put('/assign_permission/{id}', [UserController::class, 'assign_permission']);
 
    //role & permission
     Route::resource('roles', RolesController::class);

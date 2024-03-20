@@ -134,6 +134,7 @@ class RolesController extends Controller
      */
     public function update($id, Request $request)
     {
+
         $validated = Validator::make($request->all(), [
             'name' => 'required',
             'permission' => 'required',
@@ -164,9 +165,9 @@ class RolesController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Role $role)
+    public function destroy($id)
     {
-        //
+        $role = Role::find($id);
         $role->delete();
         return response([
             'message' => 'Role deleted successfully',
